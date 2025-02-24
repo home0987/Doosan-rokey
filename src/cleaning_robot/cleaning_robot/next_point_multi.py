@@ -1,10 +1,11 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup
 from nav_msgs.msg import OccupancyGrid
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy as np
 from collections import deque
-#from 
 
 class MapExplorer(Node):
     def __init__(self):
@@ -15,20 +16,26 @@ class MapExplorer(Node):
             OccupancyGrid,
             '/map',
             self.map_callback,
-            10)
+            10,
+            callback_group=ReentrantCallbackGroup()
+            )
         
         # /pose 구독 (현재 로봇 위치)
         self.pose_sub = self.create_subscription(
             PoseWithCovarianceStamped,
             '/pose',  # /amcl_pose 대신 /pose 사용
             self.pose_callback,
-            10)
+            10,
+            callback_group=ReentrantCallbackGroup()
+            )
 
         # /nearest_unknown 퍼블리셔
         self.unknown_pub = self.create_publisher(
-            PoseStamped,
+            PoseWithCovarianceStamped,
             '/nearest_unknown',
-            10)
+            10,
+            callback_group=ReentrantCallbackGroup()
+            )
 
         self.map_data = None
         self.map_info = None
@@ -58,8 +65,8 @@ class MapExplorer(Node):
         self.get_logger().info("/pose received")
 
         # 로봇 위치 변환 (World -> Grid)
-        x = msg.pose.position.x
-        y = msg.pose.position.y
+        x = msg.pose.pose.position.x
+        y = msg.pose.pose.position.y
         i, j = self.world_to_grid(x, y)
 
         if i < 0 or i >= self.map_info.height or j < 0 or j >= self.map_info.width:
@@ -109,12 +116,12 @@ class MapExplorer(Node):
     def publish_nearest_unknown(self, grid_pos):
         """ 가장 가까운 미탐색 지역을 World 좌표로 변환하여 퍼블리시 """
         x, y = self.grid_to_world(*grid_pos)
-        msg = PoseStamped()
+        msg = PoseWithCovarianceStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "map"
-        msg.pose.position.x = x
-        msg.pose.position.y = y
-        msg.pose.position.z = 0.0
+        msg.pose.pose.position.x = x
+        msg.pose.pose.position.y = y
+        msg.pose.pose.position.z = 0.0
 
         self.unknown_pub.publish(msg)
         self.get_logger().info(f"미탐색 지역 발행: {x}, {y} (Grid {grid_pos})")
@@ -122,9 +129,13 @@ class MapExplorer(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = MapExplorer()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+    try:
+        executor.spin()
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

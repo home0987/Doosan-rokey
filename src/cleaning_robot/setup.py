@@ -20,7 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'next_points = cleaning_robot.next_points:main',
+            'next_point = cleaning_robot.next_point:main',
+            'move_goal = cleaning_robot.move_goal:main',
+            'next_point_multi = cleaning_robot.next_point_multi:main',
         ],
     },
 )

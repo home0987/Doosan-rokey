@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 
@@ -8,7 +8,7 @@ class MoveGoal(Node):
     def __init__(self):
         super().__init__('move_goal')
 
-        self.subscription = self.create_subscription(PoseStamped, '/nearest_unknown', self.pose_callback, 10)
+        self.subscription = self.create_subscription(PoseWithCovarianceStamped, '/nearest_unknown', self.pose_callback, 10)
         self.subscription
 
         self.goal_publisher = self.create_publisher(PoseStamped, '/goal_pose', 10)
@@ -22,8 +22,8 @@ class MoveGoal(Node):
         goal_msg.header.stamp = self.get_clock().now().to_msg()
         goal_msg.header.frame_id = "map"  # 전역 좌표계 사용
 
-        goal_msg.pose.position.x = msg.pose.position.x
-        goal_msg.pose.position.y = msg.pose.position.y
+        goal_msg.pose.position.x = msg.pose.pose.position.x
+        goal_msg.pose.position.y = msg.pose.pose.position.y
         goal_msg.pose.orientation.w = 1.0
 
         self.goal_publisher.publish(goal_msg)
