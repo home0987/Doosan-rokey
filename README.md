@@ -7,7 +7,7 @@
 ros2 run cleaning_robot frontier
 ```
 
-### 2. BFS 기반 Path Finding
+### 2. BFS 기반 Path Finding - 패기
 ```bash
 ros2 run cleaning_robot next_point_BFS
 ```
