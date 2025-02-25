@@ -22,18 +22,13 @@ ros2 run cleaning_robot next_point_BFS
 ros2 run cleaning_robot move_goal
 ```
 
-## Navigation 및 SLAM 실행
-### TurtleBot4 Navigation 및 SLAM 실행
+### Cleaning Robot Navigation 실행
+## Navigation 및 SLAM 실행 & TurtleBot4 Navigation 실행
 ```bash
 ros2 launch turtlebot4_navigation slam.launch.py
-```
-
-### TurtleBot4 Navigation 실행
-```bash
 ros2 launch turtlebot4_navigation nav2.launch.py
 ```
 
-### Cleaning Robot Navigation 실행
 ```bash
 ros2 launch cleaning_robot cleaning_robot_nav2.launch.py
 ```
