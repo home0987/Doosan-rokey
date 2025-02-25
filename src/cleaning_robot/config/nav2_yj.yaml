@@ -133,11 +133,11 @@ controller_server:
       stateful: True
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       BaseObstacle.scale: 0.02
-      PathAlign.scale: 16.0  # 기존 32.0 → 16.0 (좁은 길에서 좀 더 유연한 이동) 18~22 정도 조정?
+      PathAlign.scale: 12.0  # 기존 32.0 → 12.0 (좁은 길에서 좀 더 유연한 이동) 18~22 정도 조정?
       PathAlign.forward_point_distance: 0.1
       GoalAlign.scale: 12.0  # 기존 24.0 → 12.0 (목표점 유연성 증가) 18~22 정도 조정?
       GoalAlign.forward_point_distance: 0.1
-      PathDist.scale: 16.0  # 기존 32.0 → 16.0 (좁은 공간에서도 부드럽게 이동) 18~22 정도 조정?
+      PathDist.scale: 12.0  # 기존 32.0 → 12.0 (좁은 공간에서도 부드럽게 이동) 18~22 정도 조정?
       GoalDist.scale: 12.0  # 기존 24.0 → 12.0 (부드러운 경로 선택) 18~22 정도 조정?
       RotateToGoal.scale: 32.0
       RotateToGoal.slowing_factor: 5.0
@@ -159,8 +159,8 @@ local_costmap:
       plugins: ["static_layer", "voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.0 # 기존 4.0 -> 0.2 (장애물 영향 줄임) 충돌 위험이 있다면 0.3~0.4 조정
-        inflation_radius: 0.2 # 기존 0.45 -> 0.2 (좁은 공간에서도 이동 가능하도록) 충돌 위험이 있다면 0.3~0.4 조정
+        cost_scaling_factor: 1.5 # 기존 4.0 -> 1.5 (장애물 영향 줄임) 충돌 위험이 있다면 0.3~0.4 조정
+        inflation_radius: 0.15 # 기존 0.45 -> 0.15 (좁은 공간에서도 이동 가능하도록) 충돌 위험이 있다면 0.3~0.4 조정
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -218,8 +218,8 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.0 # 기존 4.0 -> 2.0 (장애물 영향 줄임) ##수정
-        inflation_radius: 0.2 # 기존 0.45 -> 0.2 (좁은 공간에서도 이동 가능하도록) ##수정
+        cost_scaling_factor: 1.5 # 기존 4.0 -> 1.5 (장애물 영향 줄임)
+        inflation_radius: 0.15 # 기존 0.45 -> 0.15 (좁은 공간에서도 이동 가능하도록)
       always_send_full_costmap: True
 
 planner_server:
