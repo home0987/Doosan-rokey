@@ -74,7 +74,7 @@ class FrontierExploration(Node):
 
     def find_frontiers(self, unexplored_map, reachable_area):
         """Canny Edge Detection을 사용하여 Frontier 찾기 (도달 가능한 영역 필터링)"""
-        edges = cv2.Canny(unexplored_map, 50, 150)
+        edges = cv2.Canny(unexplored_map, 80, 150)
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         frontiers = []

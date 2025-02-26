@@ -5,11 +5,17 @@ from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from rclpy.qos import qos_profile_system_default, QoSProfile, ReliabilityPolicy
 import numpy as np
 from collections import deque
+import tf2_ros
+import tf2_geometry_msgs  # TF 변환을 위한 패키지
 
 class MapExplorer(Node):
     def __init__(self):
         super().__init__('next_points')
         qos_profile = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT, depth=10)
+
+        # TF Listener 생성
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # /map 구독
         self.map_sub = self.create_subscription(
@@ -60,19 +66,31 @@ class MapExplorer(Node):
             self.get_logger().warn("맵 데이터를 아직 수신하지 못했습니다.")
             return
 
-        #self.get_logger().info("/odom received")
+        # /odom 좌표 가져오기
+        odom_pose = PoseStamped()
+        odom_pose.header = msg.header
+        odom_pose.pose = msg.pose.pose
 
-        # 로봇 위치 변환 (World -> Grid)
-        x = msg.pose.pose.position.x
-        y = msg.pose.pose.position.y
-        i, j = self.world_to_grid(x, y)
+        try:
+            # TF 변환 요청 (odom -> map)
+            transform = self.tf_buffer.lookup_transform("map", "odom", rclpy.time.Time())
 
-        if i < 0 or i >= self.map_info.height or j < 0 or j >= self.map_info.width:
-            self.get_logger().warn("로봇 위치가 맵 범위를 벗어났습니다.")
-            return
-        
-        self.robot_grid = (i, j)
-        #self.get_logger().info(f"로봇 Grid 좌표: {self.robot_grid}")
+            # 좌표 변환 수행
+            map_pose = tf2_geometry_msgs.do_transform_pose(odom_pose, transform)
+            x, y = map_pose.pose.position.x, map_pose.pose.position.y
+
+            # 변환된 좌표를 Grid로 변환
+            i, j = self.world_to_grid(x, y)
+
+            if i < 0 or i >= self.map_info.height or j < 0 or j >= self.map_info.width:
+                self.get_logger().warn("로봇 위치가 맵 범위를 벗어났습니다.")
+                return
+
+            self.robot_grid = (i, j)
+            self.get_logger().info(f"로봇 Grid 좌표 (map 기준): {self.robot_grid}")
+
+        except Exception as e:
+            self.get_logger().warn(f"TF 변환 실패: {e}")
 
     def world_to_grid(self, x, y):
         """ World 좌표 -> Grid 좌표 변환 """
@@ -100,8 +118,8 @@ class MapExplorer(Node):
 
         points = list(zip(*np.where(self.map_data[i_low:i_high, j_low:j_high] == -1)))   # 미개척 좌표
         for p in points:
-            #if np.any(self.map_data[p[0]-1:p[0]+1, p[1]-1:p[1]+1] == 0) and p not in self.visited:    # -1/0 붙어있는 좌표
-            if p not in self.visited:
+            if np.any(self.map_data[p[0]-1:p[0]+1, p[1]-1:p[1]+1] == 0) and p not in self.visited:    # -1/0 붙어있는 좌표
+            #if p not in self.visited:
                 self.visited.add((p))
                 return p
             

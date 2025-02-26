@@ -13,6 +13,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, "launch"), glob.glob('launch/*launch.[pxy][yma]*')),
         (os.path.join('share', package_name, "config"), glob.glob('config/*')),
+        (os.path.join('share', package_name, "imgs"), glob.glob('imgs/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,6 +27,8 @@ setup(
             'move_goal = cleaning_robot.move_goal:main',
             'next_point_BFS = cleaning_robot.next_point_BFS:main',
             'next_point_grid = cleaning_robot.next_point_grid:main',
+            'frontier = cleaning_robot.frontier:main',
+            'camera_img = cleaning_robot.camera_img:main',
         ],
     },
 )
