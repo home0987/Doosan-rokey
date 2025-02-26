@@ -12,6 +12,8 @@ class FrontierExploration(Node):
         self.navigator = BasicNavigator()
         self.create_subscription(OccupancyGrid, '/map', self.map_callback, 10)
         self.create_subscription(PoseWithCovarianceStamped, '/pose', self.pose_callback, 10)
+        self.timer = self.create_timer(1.0, self.goal_callback)
+        self.goal = None
         self.map_data = None
         self.pose = None
 
@@ -33,9 +35,11 @@ class FrontierExploration(Node):
         frontiers = self.find_frontiers(unexplored_map, reachable_area)
 
         if frontiers:
-            goal = self.select_goal(frontiers, msg.info)
-            if goal:
-                self.navigator.goToPose(goal)
+            self.goal = self.select_goal(frontiers, msg.info)
+
+    def goal_callback(self):
+            if self.goal:
+                self.navigator.goToPose(self.goal)
 
     def pose_callback(self, msg):
         self.pose = msg.pose.pose
@@ -125,7 +129,6 @@ class FrontierExploration(Node):
             return goal_pose
 
         return None
-
 
 def main(args=None):
     rclpy.init(args=args)
