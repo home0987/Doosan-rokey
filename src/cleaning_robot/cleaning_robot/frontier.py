@@ -74,27 +74,30 @@ class FrontierExploration(Node):
 
     def find_frontiers(self, unexplored_map, reachable_area):
         """Canny Edge Detection을 사용하여 Frontier 찾기 (도달 가능한 영역 필터링)"""
-        edges = cv2.Canny(unexplored_map, 80, 150)
+        edges = cv2.Canny(unexplored_map, 50, 100)
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         frontiers = []
         for contour in contours:
-            if len(contour) > 5:  # 작은 컨투어 제거
+            if len(contour) >= 1:  # 작은 컨투어 제거
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
                     cx = int(M["m10"] / M["m00"])
                     cy = int(M["m01"] / M["m00"])
 
                     # 도달 가능한 영역인지 확인
-                    if reachable_area[cy, cx] == 255:
-                        frontiers.append((cx, cy))
+                    if 0 <= cx < reachable_area.shape[1] and 0 <= cy < reachable_area.shape[0]:
+                        if reachable_area[cy, cx] == 255 and unexplored_map[cy, cx] == 255:  
+                            # 탐색되지 않은 지역(Unknown)과 맞닿은 영역만 추가
+                            frontiers.append((cx, cy))
 
         return frontiers
 
     def select_goal(self, frontiers, map_info):
         """가장 가까운 Frontier를 선택하여 Goal로 설정"""
         robot_pose = self.pose
-
+        
+        MIN_GOAL_DISTANCE = 1.0
         min_dist = float('inf')
         best_goal = None
 
@@ -103,6 +106,9 @@ class FrontierExploration(Node):
             wy = map_info.origin.position.y + fy * map_info.resolution
 
             dist = np.sqrt((wx - robot_pose.position.x)**2 + (wy - robot_pose.position.y)**2)
+
+            if dist < MIN_GOAL_DISTANCE:
+                continue  # 너무 가까우면 건너뜀
 
             if dist < min_dist:
                 min_dist = dist
