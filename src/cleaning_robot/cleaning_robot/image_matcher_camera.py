@@ -3,27 +3,40 @@ import cv2
 import numpy as np
 from image_matcher import ImageMatcher
 
+# 최외곽선 컨투어 -> 꼭짓점 좌표 반환
+def find_contours_and_corners(frame, expected_size):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # 그레이스케일 변환
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0) # 블러링 (노이즈 제거)
+    edges = cv2.Canny(blurred, 50, 150) # Canny 엣지 검출
+    
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # 컨투어 찾기
+    for contour in contours:
+        approx = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True) # 컨투어 근사화
+        if len(approx) == 4: # 꼭짓점이 4개인 경우만 고려
+            x, y, w, h = cv2.boundingRect(approx)
+            if abs(w - expected_size[0]) < 5 and abs(h - expected_size[1]) < 5:
+                return approx.reshape(4, 2) # 꼭짓점 좌표 반환
+    return None # 해당하는 객체가 없으면 None 반환
+
 def main():
     rclpy.init()
     
     matcher = ImageMatcher()
     
-    # 웹캠 열기 (기본 카메라: 0)
     cap = cv2.VideoCapture(0)
     
     if not cap.isOpened():
         print("웹캠을 열 수 없습니다.")
         return
     
+    object_sizes = {"man": (23, 18), "ext": (18, 18)}
+    
     while True:
         ret, frame = cap.read()
         if not ret:
             break
         
-        # 프레임을 Grayscale 변환
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # ORB 특징점 검출
         keypoints, descriptors = matcher.orb.detectAndCompute(gray_frame, None)
 
         if descriptors is not None:
@@ -32,39 +45,24 @@ def main():
                 ref_descriptors = matcher.ref_descriptors[label]
 
                 if ref_descriptors is None or descriptors is None:
-                    continue  # 디스크립터가 없는 경우 패스
-
-                # 매칭 수행
-                matches = matcher.bf.match(ref_descriptors, descriptors)
-                matches = sorted(matches, key=lambda x: x.distance)
-                good_matches = matches[:50]  # 상위 50개 선택
-
-                # 매칭 결과를 이미지에 그리기
+                    continue
+                
+                matches = matcher.bf.match(ref_descriptors, descriptors) # 매칭 수행
+                matches = sorted(matches, key=lambda x: x.distance) # 거리 기준으로 정렬
+                good_matches = matches[:50] # 상위 50개 선택
+                
                 match_img = cv2.drawMatches(
                     matcher.ref_images[label], ref_keypoints,
                     gray_frame, keypoints,
                     good_matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-                
-                # # 매칭된 특징점 좌표 추출
-                # matched_pts = np.float32([keypoints[m.trainIdx].pt for m in good_matches])
-
-                # # 코너 검출 적용
-                # if len(matched_pts) > 0:
-                #     matched_gray = np.zeros_like(gray_frame)
-                #     for pt in matched_pts:
-                #         cv2.circle(matched_gray, (int(pt[0]), int(pt[1])), 3, 255, -1)
-
-                #     corners = cv2.goodFeaturesToTrack(matched_gray, maxCorners=10, qualityLevel=0.3, minDistance=10)
-                    
-                #     if corners is not None:
-                #         corners = np.int0(corners)  # 정수 변환
-                #         for corner in corners:
-                #             x, y = corner.ravel()
-                #             cv2.circle(match_img, (x, y), 5, (0, 255, 0), -1)  # 코너 표시
 
                 cv2.imshow(f"Matching: {label}", match_img)
+                
+                # 컨투어를 찾아 꼭짓점 좌표 반환
+                corners = find_contours_and_corners(frame, object_sizes[label])
+                if corners is not None:
+                    print(f"{label} corners: {corners}")
 
-        # 'q'를 누르면 종료
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
