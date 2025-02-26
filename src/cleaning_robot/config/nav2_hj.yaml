@@ -159,7 +159,7 @@ local_costmap:
       plugins: ["static_layer", "voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.5 # 기존 4.0 -> 1.2 (장애물 영향 줄임) 얼마나 빠르게 증가시킬지?
+        cost_scaling_factor: 2.0 # 기존 4.0 -> 1.2 (장애물 영향 줄임) 얼마나 빠르게 증가시킬지?
         inflation_radius: 0.3 # 기존 0.45 -> 0.15 (좁은 공간에서도 이동 가능하도록) cost를 얼마나 확장시킬지
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
