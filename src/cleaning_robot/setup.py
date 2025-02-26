@@ -29,6 +29,7 @@ setup(
             'next_point_grid = cleaning_robot.next_point_grid:main',
             'frontier = cleaning_robot.frontier:main',
             'camera_img = cleaning_robot.camera_img:main',
+            'image_matcher = cleaning_robot.image_matcher:main'
         ],
     },
 )
