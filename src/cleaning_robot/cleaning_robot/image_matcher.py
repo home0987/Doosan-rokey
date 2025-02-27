@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
@@ -11,14 +11,11 @@ class ImageMatcher(Node):
         super().__init__('image_matcher')
         
         self.subscriber = self.create_subscription(
-            Image, '/oakd/rgb/preview/image_raw/compressed', self.image_callback, 10)
+            CompressedImage, '/oakd/rgb/preview/image_raw/compressed', self.image_callback, 10)
         
         self.bridge = CvBridge()    # CvBridge 초기화 (ROS Image <-> OpenCV 변환)
-        # self.orb = cv2.ORB_create(nfeatures=500)    # ORB 특징점 검출기 생성 (찾는 특징점 개수)
-        self.sift = cv2.SIFT_create(nfeatures=500)
-        
-        
-        self.bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False) # BFMatcher (L2 거리 기반)
+        self.sift = cv2.SIFT_create(nfeatures=500)  # SIFT 특징점 검출기 생성 (찾는 특징점 개수)
+        self.bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False)  # BFMatcher (L2 거리 기반)
         
         # 참조 이미지 로드
         self.ref_images = {
@@ -26,27 +23,71 @@ class ImageMatcher(Node):
             "man": cv2.imread("/home/rokey/cleaning_robot/src/cleaning_robot/config/man_orig.png", cv2.IMREAD_GRAYSCALE)
         }
 
-        # 참조 이미지에서 ORB 특징점 계산
+        # 참조 이미지에서 SIFT 특징점 계산
         self.ref_keypoints = {}
         self.ref_descriptors = {}
         
         for key, img in self.ref_images.items():
             if img is not None:
-                # kp, des = self.orb.detectAndCompute(img, None)
-                kp, des = self.sift.detectAndCompute(img, None)     # np.float32
+                # SIFT 특징점 및 디스크립터 계산
+                kp, des = self.sift.detectAndCompute(img, None)  # np.float32
                 self.ref_keypoints[key] = kp
                 self.ref_descriptors[key] = des
             else:
-                self.get_logger().error(f"Failed to load reference image: {key}")
+                self.get_logger().error(f"이미지 로드 실패: {key}")
         
         # 이전 프레임 저장용 변수
         self.prev_keypoints = None
         self.prev_descriptors = None
-    
+
+    def match_features(self, des1, des2):
+        # SIFT 디스크립터를 이용해 두 이미지 간 특징점 매칭 수행 (KNN 기반)
+        matches = self.bf.knnMatch(des1, des2, k=2) # KNN 매칭 (각 키포인트에 대해 2개의 가장 가까운 매칭점 찾기)
+        good_matches = []
+        
+        # Lowe's ratio test 잘못된 매칭 제거 (가장 가까운 매칭점과 두 번째 가까운 매칭점의 거리 비율 이용)
+        for match_pair in matches:
+            if len(match_pair) == 2:
+                m, n = match_pair
+                if m.distance < 0.85 * n.distance:  # 첫 번째 매칭점이 두 번째보다 충분히 가까울 때만 유효한 매칭으로 판단
+                    good_matches.append(m)
+        return good_matches
+
+    def compute_homography(self, keypoints1, keypoints2, matches):
+        # Homography(투영 변환) 행렬을 계산하여 한 이미지에서 다른 이미지로 변환 가능 여부 확인
+        if len(matches) < 4: # 최소 4개의 매칭점
+            return None, None
+
+        # 매칭된 키포인트 좌표 추출
+        src_pts = np.float32([keypoints1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+        dst_pts = np.float32([keypoints2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+
+        # RANSAC 알고리즘을 사용하여 Homography 행렬 계산
+        H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+        return H, mask
+
+    def validate_projection_error(self, keypoints1, keypoints2, matches, H):
+        # Homography 변환을 적용한 후 투영된 좌표와 실제 좌표 간의 오류 검증
+        if H is None:
+            return False
+
+        # 매칭된 키포인트 좌표 추출
+        src_pts = np.float32([keypoints1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+        dst_pts = np.float32([keypoints2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+        
+        # Homography를 사용하여 참조 이미지 좌표를 입력 이미지 좌표로 변환
+        projected_pts = cv2.perspectiveTransform(src_pts, H)
+
+        # 변환된 좌표와 실제 좌표 간의 L2 거리(오차) 계산
+        error = np.linalg.norm(projected_pts - dst_pts, axis=2)
+        mean_error = np.mean(error)
+        
+        return mean_error < 5.0  # 평균 투영 오류가 5 픽셀 이하일 때만 유효
+
     def image_callback(self, msg):
         try:
-            # ROS Image → OpenCV BGR 이미지 변환
-            frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+            # ROS 이미지 → OpenCV 변환 (BGR → Grayscale)
+            frame = self.bridge.compressed_imgmsg_to_cv2(msg, desired_encoding='bgr8')  # compressed
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             keypoints, descriptors = self.sift.detectAndCompute(gray_frame, None)
 
@@ -61,41 +102,33 @@ class ImageMatcher(Node):
                 if ref_descriptors is None or len(ref_descriptors) < 2:
                     continue
                 
-                matches = self.bf.knnMatch(ref_descriptors, descriptors, k=2)
+                good_matches = self.match_features(ref_descriptors, descriptors)
                 
-                good_matches = []
-                for match_pair in matches:
-                    if len(match_pair) == 2:
-                        m, n = match_pair
-                        if m.distance < 0.85 * n.distance:
-                            good_matches.append(m)
-                
+                if len(good_matches) > 10:
+                    good_matches = sorted(good_matches, key=lambda x: x.distance)[:10]  # 거리 기준 정렬 후 상위 10개 선택
+
+                # # 매칭된 점 개수 확인 (ext:50, man:100으로 설정) 
+                # match_threshold = 50 if label == "ext" else 100 ##수정사항
+                # if len(good_matches) < match_threshold:
+                #     self.get_logger().warn(f"Not enough good matches for {label}.")
+                #     # continue
+
+                # Homography 계산 및 검증
+                H, mask = self.compute_homography(ref_keypoints, keypoints, good_matches)
+                if H is None or not self.validate_projection_error(ref_keypoints, keypoints, good_matches, H):
+                    self.get_logger().warn(f"Invalid homography for {label}.")
+                    # continue
+
+                # 매칭된 키포인트 표시
                 match_img = cv2.drawMatches(
                     self.ref_images[label], ref_keypoints,
                     gray_frame, keypoints,
                     good_matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-                
-                # if self.prev_keypoints is not None and self.prev_descriptors is not None:
-                #     prev_pts = np.float32([self.prev_keypoints[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
-                #     curr_pts = np.float32([keypoints[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
-                #     # 오버레이에 라인(매칭선) 그리기
-                #     for p0, p1 in zip(prev_pts, curr_pts):
-                #         pt0 = tuple(map(int, p0.ravel()))
-                #         pt1 = tuple(map(int, p1.ravel()))
-                #         cv2.line(self.overlay, pt0, pt1, (0, 0, 255), 2)
-
-                # 이번 프레임을 다음 프레임을 위한 prev_*에 저장
-                self.prev_keypoints = keypoints
-                self.prev_descriptors = descriptors
-                
-                # 키포인트 표시
-                for match in good_matches:
-                    x, y = map(int, keypoints[match.trainIdx].pt)
-                    cv2.circle(gray_frame, (x, y), 5, (0, 255, 0), -1)
-                
                 cv2.imshow(f"Matching: {label}", match_img)
-                cv2.waitKey(1)
+                cv2.waitKey(0)
+                continue
+                
         except Exception as e:
             self.get_logger().error(f"Error processing image: {e}")
 
