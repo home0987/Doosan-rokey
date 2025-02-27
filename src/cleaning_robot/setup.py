@@ -31,6 +31,7 @@ setup(
             'camera_img = cleaning_robot.camera_img:main',
             'image_matcher = cleaning_robot.image_matcher:main',
             'camera_map_tf = cleaning_robot.camera_map_tf:main',
+            'camera_map_tf_pos = cleaning_robot.camera_map_tf_pos:main',
         ],
     },
 )

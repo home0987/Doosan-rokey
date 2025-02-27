@@ -29,14 +29,8 @@ class MapExplorer(Node):
             '/map',
             self.map_callback,
             10)
-        
-        # /pose 구독 (현재 로봇 위치)
-        self.odom_sub = self.create_subscription(
-            Odometry,
-            '/odom',
-            self.odom_callback,
-            qos_profile=qos_profile
-        )#callback_group=ReentrantCallbackGroup())
+
+        self.create_subscription(PoseWithCovarianceStamped, '/pose', self.pose_callback, 10)
 
         # /pnp_trans 퍼블리셔
         self.pnp_trans_sub = self.create_subscription(
@@ -50,7 +44,7 @@ class MapExplorer(Node):
         self.robot_current_pos = None
         self.robot_grid = None  # 로봇 위치 (grid 좌표)
         self.pnp_mat = None  # 가장 가까운 미탐색 지역
-        #self.transform_camera_base = self.tf_buffer.lookup_transform("oakd_rgb_camera_optical_frame", "base_link", rclpy.time.Time())
+        self.pose = None
 
         #self.timer = self.create_timer(1.0, point)
 
@@ -65,70 +59,8 @@ class MapExplorer(Node):
 
         #lib_img.visual_map_topic(self.map_info.height, self.map_info.width, self.map_data, self.robot_grid)
 
-    def odom_callback(self, msg):
-        """ 로봇 위치 (World 좌표) -> Grid 좌표 변환 """
-        if self.map_info is None or self.map_data is None:
-            self.get_logger().warn("맵 데이터를 아직 수신하지 못했습니다.")
-            return
-
-        # # /odom 좌표 가져오기
-        # odom_pose = PoseStamped()
-        # odom_pose.header = msg.header
-        # odom_pose.pose = msg.pose.pose
-        # self.get_logger().info(f"odom_pos.pos = {odom_pose.pose}")
-        # Odometry().pose.pose
-        #PoseStamped().pose.position
-        try:
-            # TF 변환 요청 (odom -> map)
-            transform = self.tf_buffer.lookup_transform("map", "odom", rclpy.time.Time())
-
-            # 변환 행렬 추출
-            trans = transform.transform.translation  # 변위 (Translation)
-            rot = transform.transform.rotation       # 회전 (Rotation - Quaternion)
-
-            # Odometry 좌표
-            odom_x = msg.pose.pose.position.x
-            odom_y = msg.pose.pose.position.y
-            odom_z = msg.pose.pose.position.z
-
-            # 쿼터니언 -> 회전 행렬 변환
-            rotation_matrix = lib_tf.quaternion_to_rotation_matrix(rot.x, rot.y, rot.z, rot.w)
-
-            # 변환 적용 (R * odom + T)
-            odom_position = np.array([odom_x, odom_y, odom_z])  # 3x1 벡터
-            translation = np.array([trans.x, trans.y, trans.z])  # 3x1 벡터
-            map_position = np.dot(rotation_matrix, odom_position) + translation  # 좌표 변환 수행
-
-            # 새로운 쿼터니언 적용 (회전 변환)
-            odom_quat = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y,
-                         msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
-            odom_rotation_matrix = lib_tf.quaternion_to_rotation_matrix(*odom_quat)
-            map_rotation_matrix = np.dot(rotation_matrix, odom_rotation_matrix)
-            map_quat = lib_tf.quaternion_from_matrix(map_rotation_matrix)
-            self.robot_current_pos = map_position
-            x, y = map_position[0], map_position[1]
-
-            # 변환된 좌표 출력
-            self.get_logger().info(f"map 좌표: x={map_position[0]}, y={map_position[1]}")
-
-
-            # 좌표 변환 수행
-            # map_pose = tf2_geometry_msgs.do_transform_pose(odom_pose.pose, transform)
-            # self.get_logger().info(f"map_pose = {map_pose}")
-            # x, y = map_pose.position.x, map_pose.position.y
-
-            # 변환된 좌표를 Grid로 변환
-            i, j = self.world_to_grid(x, y)
-
-            if i < 0 or i >= self.map_info.height or j < 0 or j >= self.map_info.width:
-                self.get_logger().warn("로봇 위치가 맵 범위를 벗어났습니다.")
-                return
-
-            self.robot_grid = (i, j)
-            self.get_logger().info(f"로봇 Grid 좌표 (map 기준): {self.robot_grid}")
-
-        except Exception as e:
-            self.get_logger().warn(f"TF 변환 실패: {e}")
+    def pose_callback(self, msg):
+        self.pose = msg.pose.pose
 
     def world_to_grid(self, x, y):
         """ World 좌표 -> Grid 좌표 변환 """
@@ -148,11 +80,11 @@ class MapExplorer(Node):
             #x, y = self.grid_to_world(*self.robot_grid)
 
             camera_base = Pose()
-            camera_base.position.x = self.robot_current_pos[0]
-            camera_base.position.y = self.robot_current_pos[1]
-            camera_base.position.z = self.robot_current_pos[2]
+            camera_base.position.x = self.pose[0]
+            camera_base.position.y = self.pose[1]
+            camera_base.position.z = self.pose[2]
 
-            self.transform_camera_base = self.tf_buffer.lookup_transform("base_link", "oakd_rgb_camera_optical_frame", rclpy.time.Time())
+            self.transform_camera_base = self.tf_buffer.lookup_transform("oakd_rgb_camera_optical_frame", "base_link", rclpy.time.Time())
             pre_pos = tf2_geometry_msgs.do_transform_pose(camera_base, self.transform_camera_base)
 
             # tvec = lib_tf.tf_cam_2_base(x, y, 0)
@@ -161,7 +93,7 @@ class MapExplorer(Node):
 
             x, y, z = pre_pos.position.x, pre_pos.position.y, pre_pos.position.z
             marker_current = Marker()
-            marker_current = lib_img.get_marker(x, y, 0.0, self.get_clock().now().to_msg(), 1.0, 0.0, 0.0)
+            marker_current = lib_img.get_marker(x, y, 0.0, self.get_clock().now().to_msg(), 0.0, 0.0, 1.0)
             self.current_pos_marker.publish(marker_current)
 
             T = lib_tf.transform_to_matrix(transform_msg)
@@ -170,7 +102,7 @@ class MapExplorer(Node):
             point = np.array([x, y, z, 1])
 
             # 변환 행렬 적용
-            transformed_point = -T @ point
+            transformed_point = T @ point
 
             # 새로운 (x, y) 좌표
             x_new, y_new = transformed_point[0], transformed_point[1]
