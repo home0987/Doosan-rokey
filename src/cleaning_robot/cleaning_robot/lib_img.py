@@ -66,7 +66,7 @@ def img_matching(img):
         cv2.destroyWindow('math imgs')
 
 
-def get_marker(x, y, z, time):
+def get_marker(x, y, z, time, r=0.0, g=1.0, b=0.0, a=1.0):
     marker = Marker()
     marker.header.frame_id = "map"  # 지도 프레임 기준
     #marker.header.stamp = self.get_clock().now().to_msg()
@@ -79,10 +79,10 @@ def get_marker(x, y, z, time):
     marker.scale.x = 0.05  # 점의 크기 (x, y 동일)
     marker.scale.y = 0.05
     # 점의 색상 설정 (RGBA)
-    marker.color.r = 0.0  # 빨간색
-    marker.color.g = 1.0
-    marker.color.b = 0.0
-    marker.color.a = 1.0  # 투명도 (1.0 = 불투명)
+    marker.color.r = r  # 빨간색
+    marker.color.g = g
+    marker.color.b = b
+    marker.color.a = a  # 투명도 (1.0 = 불투명)
     # 점 좌표 추가 (여러 개 가능)
     point = Point()
     point.x = x  # x 좌표

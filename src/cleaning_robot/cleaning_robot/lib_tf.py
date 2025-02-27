@@ -51,7 +51,7 @@ def pnp(points_3D, points_2D):
         [0.0, 200.998, 130.544],  # 0,  fy, cy
         [0.0, 0.0, 1.0]           # 0,   0,  1
     ], dtype=np.float32)
-
+    #cameraMatrix = 0.001 * cameraMatrix
     # 왜곡 계수
     dist_coeffs = np.array([
         13.3801, -150.4605, 0.0022977, 0.0011334, 541.2130,

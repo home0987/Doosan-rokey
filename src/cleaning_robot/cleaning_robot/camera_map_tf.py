@@ -8,7 +8,7 @@ from collections import deque
 import tf2_ros
 import tf2_geometry_msgs  # TF 변환을 위한 패키지
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Transform
+from geometry_msgs.msg import Transform, Pose
 import cleaning_robot.lib_tf as lib_tf
 import cleaning_robot.lib_img as lib_img
 
@@ -46,8 +46,10 @@ class MapExplorer(Node):
 
         self.map_data = None
         self.map_info = None
+        self.robot_current_pos = None
         self.robot_grid = None  # 로봇 위치 (grid 좌표)
         self.pnp_mat = None  # 가장 가까운 미탐색 지역
+        #self.transform_camera_base = self.tf_buffer.lookup_transform("oakd_rgb_camera_optical_frame", "base_link", rclpy.time.Time())
 
         #self.timer = self.create_timer(1.0, point)
 
@@ -102,6 +104,7 @@ class MapExplorer(Node):
             odom_rotation_matrix = lib_tf.quaternion_to_rotation_matrix(*odom_quat)
             map_rotation_matrix = np.dot(rotation_matrix, odom_rotation_matrix)
             map_quat = lib_tf.quaternion_from_matrix(map_rotation_matrix)
+            self.robot_current_pos = map_position
             x, y = map_position[0], map_position[1]
 
             # 변환된 좌표 출력
@@ -141,27 +144,41 @@ class MapExplorer(Node):
     def pnp_callback(self, transform_msg):
         self.pnp_mat = transform_msg
         if self.robot_grid:
-            x, y = self.grid_to_world(*self.robot_grid)
-            tvec = lib_tf.tf_cam_2_base(x, y, 0)
-            self.get_logger().info(f"tvec = {tvec}")
-            x, y = tvec[0][0], tvec[0][1]
+            #x, y = self.grid_to_world(*self.robot_grid)
+
+            camera_base = Pose()
+            camera_base.position.x = self.robot_current_pos[0]
+            camera_base.position.y = self.robot_current_pos[1]
+            camera_base.position.z = self.robot_current_pos[2]
+
+            self.transform_camera_base = self.tf_buffer.lookup_transform("oakd_rgb_camera_optical_frame", "base_link", rclpy.time.Time())
+            pre_pos = tf2_geometry_msgs.do_transform_pose(camera_base, self.transform_camera_base)
+
+            # tvec = lib_tf.tf_cam_2_base(x, y, 0)
+            # self.get_logger().info(f"tvec = {tvec}")
+            # x, y = tvec[0][0], tvec[0][1]
+
+            x, y, z = pre_pos.position.x, pre_pos.position.y, pre_pos.position.z
 
             T = lib_tf.transform_to_matrix(transform_msg)
 
             # 동차 좌표계로 변환 (z=0, w=1)
-            point = np.array([x, y, 0, 1])
+            point = np.array([x, y, z, 1])
 
             # 변환 행렬 적용
             transformed_point = T @ point
 
             # 새로운 (x, y) 좌표
             x_new, y_new = transformed_point[0], transformed_point[1]
+            x_new_map, y_new_map = self.world_to_grid(x_new, y_new)
             
-            robot_pos = self.grid_to_world(*self.robot_grid)
+            # x_point = point[:3].transpose() + 0.01*T[:3, 3] * self.map_info.resolution
+            # x_new, y_new = x_point[:2]
+
             marker = Marker()
-            marker = lib_img.get_marker(robot_pos[0], robot_pos[1], 0.0, self.get_clock().now().to_msg())
+            marker = lib_img.get_marker(float(x_new), float(y_new), 0.0, self.get_clock().now().to_msg())
             self.marker_pub.publish(marker)
-            self.get_logger().info(f"robot pos x = {robot_pos[0]}, y = {robot_pos[1]}")
+            self.get_logger().info(f"robot pos x = {self.robot_current_pos[0]}, y = {self.robot_current_pos[1]}")
             # 변환된 (x, y) 값을 로그로 출력
             self.get_logger().info(f"Transformed (x, y): ({x_new:.3f}, {y_new:.3f})")
 

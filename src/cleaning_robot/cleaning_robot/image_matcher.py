@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CompressedImage
-from geometry_msgs.msg import Transform, CompressedImage
+from geometry_msgs.msg import Transform
 from cv_bridge import CvBridge
 import cv2, os, time
 import numpy as np
@@ -34,6 +34,11 @@ class ImageMatcher(Node):
         self.ref_images = {
             "ext": cv2.imread(ext, cv2.IMREAD_GRAYSCALE),
             #"man": cv2.imread(man, cv2.IMREAD_GRAYSCALE)
+        }
+
+        self.img_pixel = {
+            'ext': [680, 680],
+            'man': [869, 680]
         }
 
         # 참조 이미지에서 SIFT 특징점 계산
@@ -162,9 +167,13 @@ class ImageMatcher(Node):
                 cam_matched_pts = np.array([keypoints[m.trainIdx].pt for m in good_matches[:features]], dtype="double")
 
                 # 3D 좌표로 변환 (가정: 사진의 특징점을 월드 좌표에서 특정 위치에 배치)
+                x_conv = 1/self.img_pixel[label][0]
+                y_conv = 1/self.img_pixel[label][1]
+
                 points_3D = np.array([
-                    (p[0], p[1], 0.0) for p in ref_matched_pts  # 2D → 3D 변환
+                    (x_conv * p[0], y_conv * p[1], 0.0) for p in ref_matched_pts  # 2D → 3D 변환
                 ], dtype="double")
+
                 
                 R, tvec = lib_tf.pnp(points_3D, cam_matched_pts)
                 trans = lib_tf.gen_tf_pnp(R, tvec)
