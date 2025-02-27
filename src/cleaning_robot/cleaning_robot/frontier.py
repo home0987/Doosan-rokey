@@ -53,8 +53,8 @@ class FrontierExploration(Node):
         # 로봇의 현재 위치 가져오기
         robot_pose = self.pose
 
-        self.get_logger().info(f"robot_pose: {robot_pose}")
-        self.get_logger().info(f"map_data: {map_data}")
+        # self.get_logger().info(f"robot_pose: {robot_pose}")
+        # self.get_logger().info(f"map_data: {map_data}")
 
         start_x = int((robot_pose.position.x - msg.origin.position.x) / msg.resolution) 
         start_y = int((robot_pose.position.y - msg.origin.position.y) / msg.resolution)
