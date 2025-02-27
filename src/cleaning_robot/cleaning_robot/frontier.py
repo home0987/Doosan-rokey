@@ -12,7 +12,7 @@ class FrontierExploration(Node):
         self.navigator = BasicNavigator()
         self.create_subscription(OccupancyGrid, '/map', self.map_callback, 10)
         self.create_subscription(PoseWithCovarianceStamped, '/pose', self.pose_callback, 10)
-        self.timer = self.create_timer(1.0, self.goal_callback)
+        self.timer = self.create_timer(2.0, self.goal_callback)
         self.goal = None
         self.map_data = None
         self.pose = None
@@ -28,7 +28,7 @@ class FrontierExploration(Node):
         self.map_data = np.array(msg.data).reshape((height, width))
 
         # 1. 도달 가능한 지역만 추출 (Flood Fill)
-        reachable_area = self.get_reachable_area(self.map_data, msg.info) ######################
+        reachable_area = self.get_reachable_area(self.map_data, msg.info) 
 
         # 2. 미탐색 지역에서 Frontier 찾기
         unexplored_map = (self.map_data == -1).astype(np.uint8) * 255  # 미탐색 지역 (Unknown)
@@ -53,10 +53,10 @@ class FrontierExploration(Node):
         # 로봇의 현재 위치 가져오기
         robot_pose = self.pose
 
-        self.get_logger().info(f"robot_pose: {robot_pose}")
-        self.get_logger().info(f"map_data: {map_data}")
+        # self.get_logger().info(f"robot_pose: {robot_pose}")
+        # self.get_logger().info(f"map_data: {map_data}")
 
-        start_x = int((robot_pose.position.x - msg.origin.position.x) / msg.resolution) ################
+        start_x = int((robot_pose.position.x - msg.origin.position.x) / msg.resolution) 
         start_y = int((robot_pose.position.y - msg.origin.position.y) / msg.resolution)
 
         # BFS Flood Fill

@@ -1,6 +1,6 @@
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image, CompressedImage
+from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Transform
 from cv_bridge import CvBridge
 import cv2, os, time
@@ -21,7 +21,6 @@ class ImageMatcher(Node):
         self.bridge = CvBridge()    # CvBridge 초기화 (ROS Image <-> OpenCV 변환)
         # self.orb = cv2.ORB_create(nfeatures=500)    # ORB 특징점 검출기 생성 (찾는 특징점 개수)
         self.sift = cv2.SIFT_create(nfeatures=500)
-        
         
         self.bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False) # BFMatcher (L2 거리 기반)
         
@@ -65,10 +64,15 @@ class ImageMatcher(Node):
         
         # Lowe's ratio test 잘못된 매칭 제거 (가장 가까운 매칭점과 두 번째 가까운 매칭점의 거리 비율 이용)
         for match_pair in matches:
-            if len(match_pair) == 2:
-                m, n = match_pair
-                if m.distance < 0.85 * n.distance:  # 첫 번째 매칭점이 두 번째보다 충분히 가까울 때만 유효한 매칭으로 판단
-                    good_matches.append(m)
+            if len(match_pair) < 2:
+                continue
+            m, n = match_pair
+            if m.distance < 0.70 * n.distance:  # 첫 번째 매칭점이 두 번째보다 충분히 가까울 때만 유효한 매칭으로 판단
+                good_matches.append(m)
+        
+        N_MATCHES = 30  # 상위 N개의 매칭만 사용
+        good_matches = sorted(good_matches, key=lambda x: x.distance)[:N_MATCHES]
+                
         return good_matches
 
     def compute_homography(self, keypoints1, keypoints2, matches):
@@ -100,7 +104,7 @@ class ImageMatcher(Node):
         error = np.linalg.norm(projected_pts - dst_pts, axis=2)
         mean_error = np.mean(error)
         
-        return mean_error < 5.0  # 평균 투영 오류가 5 픽셀 이하일 때만 유효
+        return mean_error < 3.0  # 평균 투영 오류가 3 픽셀 이하일 때만 유효
 
     def image_callback(self, msg):
         try:
@@ -122,20 +126,23 @@ class ImageMatcher(Node):
                 
                 good_matches = self.match_features(ref_descriptors, descriptors)
                 
-                if len(good_matches) > 10:
-                    good_matches = sorted(good_matches, key=lambda x: x.distance)[:10]  # 거리 기준 정렬 후 상위 10개 선택
+                # 최소 매칭 개수 체크 (20개 이하라면 신뢰할 수 없음)
+                if len(good_matches) < 20:
+                    self.get_logger().warn(f"Not enough good matches for {label}.")
+                    match_img = gray_frame.copy()
+                    cv2.putText(match_img, f"Not enough good matches for {label}", (50, 50),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                    return
 
-                # # 매칭된 점 개수 확인 (ext:50, man:100으로 설정) 
-                # match_threshold = 50 if label == "ext" else 100 ##수정사항
-                # if len(good_matches) < match_threshold:
-                #     self.get_logger().warn(f"Not enough good matches for {label}.")
-                #     # continue
-
-                # Homography 계산 및 검증
+                # Homography 계산 및 검증 (RANSAC 오차가 너무 크면 무효 처리)
                 H, mask = self.compute_homography(ref_keypoints, keypoints, good_matches)
+                
                 if H is None or not self.validate_projection_error(ref_keypoints, keypoints, good_matches, H):
                     self.get_logger().warn(f"Invalid homography for {label}.")
-                    # continue
+                    match_img = gray_frame.copy()
+                    cv2.putText(match_img, f"Invalid homography for {label}", (50, 50),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                    return
 
                 # 매칭된 키포인트 표시
                 match_img = cv2.drawMatches(
@@ -162,7 +169,8 @@ class ImageMatcher(Node):
                     x, y = map(int, keypoints[match.trainIdx].pt)
                     cv2.circle(gray_frame, (x, y), 5, (0, 255, 0), -1)
 
-                features = 20 if len(good_matches) <= 20 else len(good_matches)
+                # features = 20 if len(good_matches) <= 20 else len(good_matches)
+                features = min(20, len(good_matches)) # 매칭 20개 이상인 경우에만 좌표 변환 수행
                 ref_matched_pts = np.array([ref_keypoints[m.queryIdx].pt for m in good_matches[:features]], dtype="double")
                 cam_matched_pts = np.array([keypoints[m.trainIdx].pt for m in good_matches[:features]], dtype="double")
 

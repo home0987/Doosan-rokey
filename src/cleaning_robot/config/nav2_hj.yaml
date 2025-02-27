@@ -123,7 +123,7 @@ controller_server:
       vx_samples: 20
       vy_samples: 5
       vtheta_samples: 20
-      sim_time: 1.5  # 기존 1.7 → 1.5 (시뮬레이션 고려 시간 : 미래 경로 예측을 더 길게 하도록) 1.7~2.5 범위 조정
+      sim_time: 2.5  # 기존 1.7 → 1.5 (시뮬레이션 고려 시간 : 미래 경로 예측을 더 길게 하도록) 1.7~2.5 범위 조정 1.5 -> 5.0
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
