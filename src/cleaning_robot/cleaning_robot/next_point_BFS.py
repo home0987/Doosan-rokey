@@ -8,7 +8,7 @@ from rclpy.qos import qos_profile_system_default, QoSProfile, ReliabilityPolicy
 import numpy as np
 from collections import deque
 
-import cleaning_robot.lib as lib
+import cleaning_robot.lib_img as lib_img
 
 class MapExplorer(Node):
     def __init__(self):

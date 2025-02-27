@@ -1,8 +1,12 @@
 import numpy as np
 import cv2, os
 from ament_index_python.packages import get_package_share_directory
+from geometry_msgs.msg import Transform, Point
+from visualization_msgs.msg import Marker
+
 pkg_path = get_package_share_directory('cleaning_robot')
 img_dir_path = os.path.join(pkg_path, 'imgs')
+
 
 def visual_map_topic(height:int, width:int, map_:np.int8, current_pos:tuple):
     '''/map 토픽 시각화'''
@@ -61,6 +65,32 @@ def img_matching(img):
         cv2.waitKey(1)  # OpenCV 윈도우 업데이트를 위한 키 입력 대기
         cv2.destroyWindow('math imgs')
 
+
+def get_marker(x, y, z, time):
+    marker = Marker()
+    marker.header.frame_id = "map"  # 지도 프레임 기준
+    #marker.header.stamp = self.get_clock().now().to_msg()
+    marker.header.stamp = time
+    marker.ns = "map_points"
+    marker.id = 0
+    marker.type = Marker.POINTS  # 점(Points) 타입
+    marker.action = Marker.ADD
+    # 점의 크기 설정
+    marker.scale.x = 0.05  # 점의 크기 (x, y 동일)
+    marker.scale.y = 0.05
+    # 점의 색상 설정 (RGBA)
+    marker.color.r = 0.0  # 빨간색
+    marker.color.g = 1.0
+    marker.color.b = 0.0
+    marker.color.a = 1.0  # 투명도 (1.0 = 불투명)
+    # 점 좌표 추가 (여러 개 가능)
+    point = Point()
+    point.x = x  # x 좌표
+    point.y = y  # y 좌표
+    point.z = z  # 지도면 위에 점을 찍으므로 z=0
+    marker.points.append(point)
+    
+    return marker
 
 if __name__ == '__main__':
     print('?')

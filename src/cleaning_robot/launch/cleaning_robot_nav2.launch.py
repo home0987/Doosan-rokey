@@ -15,13 +15,13 @@ def generate_launch_description():
     nav2_yaml_dir = os.path.join(
         get_package_share_directory('cleaning_robot'),
         'config',
-        'nav2_yy.yaml'
+        'nav2_hj.yaml'
     )
 
     slam_yaml_dir = os.path.join(
         get_package_share_directory('cleaning_robot'),
         'config',
-        'slam_yy.yaml'
+        'slam_1.yaml'
     )
     
     nav2_yaml_dir = LaunchConfiguration('nav2_yaml_dir', default=nav2_yaml_dir)
