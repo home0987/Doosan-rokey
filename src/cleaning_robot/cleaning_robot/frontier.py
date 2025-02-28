@@ -12,7 +12,7 @@ class FrontierExploration(Node):
         self.navigator = BasicNavigator()
         self.create_subscription(OccupancyGrid, '/map', self.map_callback, 10)
         self.create_subscription(PoseWithCovarianceStamped, '/pose', self.pose_callback, 10)
-        self.timer = self.create_timer(2.0, self.goal_callback)
+        self.timer = self.create_timer(3.0, self.goal_callback)
         self.goal = None
         self.map_data = None
         self.pose = None
