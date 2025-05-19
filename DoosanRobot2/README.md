@@ -5,7 +5,7 @@
 
 ## 🎥 프로젝트 데모 영상
 
-![협동 로봇 데모]https://youtu.be/a3j8OqqYnbg
+- [협동 로봇 데모 영상 보기] https://youtu.be/a3j8OqqYnbg
 
 ---
 
