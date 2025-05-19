@@ -10,13 +10,42 @@ YOLOv8 기반 객체 탐지와 OpenCV 색상 필터링, ROS2 내비게이션,
 ## 📌 프로젝트 개요 (Solution Overview)
 
 - **비즈니스 목표**: 자율 이동 로봇 카트 시스템 개발 및 판매/임대  
-- **주요 기능**:  
+- **프로젝트 범위**:  
   - 고객 자율 주행 및 추적 (YOLOv8 + OpenCV 색상 필터링)  
-  - 장애물 회피 및 자동 반납  
+  - 실시간 장애물 회피 및 자동 반납  
   - 고객 신뢰도가 가장 높은 객체 선택 및 거리 유지  
-  - 실시간 로봇 위치 알림 및 사용자 제어 인터페이스 제공  
 - **시스템 통신**: PC와 AMR 간 ROS2 기반 통신
-- 
+  
+---
+
+## 🚀 주요 기능
+
+- **자율 주행 및 내비게이션**  
+  - SLAM 및 ROS2 Navigation Stack 사용  
+  - 장애물 실시간 감지 및 경로 재계산  
+  - 초기 위치로 자동 복귀 기능
+
+- **객체 탐지 및 트래킹**  
+  - Jetson-Orin에서 YOLOv8 기반 객체 인식  
+  - OpenCV 색상 필터링으로 고객 객체(빨간 RC카) 추적  
+
+- **사용자 인터페이스**  
+  - 주행 시작, 정지, 반납 버튼 제공  
+
+- **성능 및 신뢰성**  
+  - 객체 인식 정확도 95% 이상
+    
+---
+
+## 📋 데이터 흐름
+
+1. USB 카메라 영상 → YOLOv8 모델 분석  
+2. 신뢰도 기준 최고 객체 선택 → 좌우 회전 및 전진/후진 명령 생성  
+3. ROS2 토픽으로 이동 명령 퍼블리시  
+4. 장애물 감지 및 경로 재계산  
+5. 트래킹 실패 시 위치 정보 PC로 전송  
+6. 사용자 대시보드에서 실시간 상태 확인 및 제어
+
 ---
 
 ## ⚠ 주요 도전과제 및 해결 방법
@@ -59,30 +88,36 @@ YOLOv8 기반 객체 탐지와 OpenCV 색상 필터링, ROS2 내비게이션,
 
 - `focal_length_measurement.py` : 카메라 초점 거리 측정  
 - `camera_tracking_node.py` : YOLOv8 객체 추적 및 로봇 이동 명령 퍼블리시  
+- `camera_detection.py` : OpenCV 기반 색상 필터링 및 객체 추적 보조
 - `nav.py` : ROS2 내비게이션 웨이포인트 액션 및 GUI  
-- `amr.py` : AMR 관련 제어 기능  
-- `camera_detection.py` : OpenCV 기반 색상 필터링
+- `amr.py` : AMR 관련 제어 기능
+- `yolov8_spp.ipynb` : YOLOv8 학습용 주피터 노트북
 
 ---
 
-## 🚀 실행 방법
+## ⚙️ 실행 방법
 
 ### 1. 환경 준비
 
 - ROS2 Humble, Python 3.10, OpenCV, PySide2, MySQL 설치  
 - 필요 라이브러리는 `requirements.txt` 또는 개별 설치 필요  
 
-### 2. 카메라 초점 거리 측정 (필요 시)
+### 2. 카메라 초점 거리 측정
 
 ```bash
 python3 focal_length_measurement.py
 ```
 ### 3. ROS2 내비게이션 노드 및 GUI 실행
 ```bash
-ros2 run nav  # nav.py 내비게이션 노드 실행
+ros2 run shopping_robot nav  # nav.py 내비게이션 노드 실행
 ```
 
 ### 4. 객체 추적 및 이동 명령 퍼블리시
 ```bash
-ros2 run <your_package> camera_tracking_node
+ros2 run shopping_robot camera_tracking_node
+```
+
+### 필요 시 주피터 노트북 실행
+```bash
+jupyter notebook yolov8_spp.ipynb
 ```
