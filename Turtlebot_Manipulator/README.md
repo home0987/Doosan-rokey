@@ -1,6 +1,23 @@
-# 📦 Box Sorter Package
+# 📦 Box Sorter Package — AMR + Manipulator 기반 박스 이동 자동화
 
-## 📌 Requirements
+---
+
+## 📌 프로젝트 개요
+
+본 프로젝트는 AMR(자율이동로봇)과 매니퓰레이터를 활용해 박스 이동 및 적재 작업을 자동화하는 시스템입니다.  
+ArUco 마커 인식과 캘리브레이션 기반 색상 감지를 이용해 작업 위치를 탐색하고, GUI 기반 Task 입력을 통해 목적지 및 작업 유형을 지정하여 AMR과 매니퓰레이터가 협력하여 박스를 컨베이어 벨트에 올리고, 최종 위치로 이동시킨 뒤 원위치 복귀하는 작업을 수행합니다.
+
+---
+
+## 🛠 사용 기술 스택
+
+- ROS 2 Humble: AMR 및 매니퓰레이터 제어, GUI 통신  
+- ArUco 마커 인식: 위치 탐색 및 정렬  
+- 캘리브레이션 기반 박스 감지: 빨강/파랑 색상 인식  
+- PySide2 GUI: Task 입력 및 실행 모니터링  
+- MoveIt: 로봇 팔 경로 계획 및 제어
+
+---
 
 ### 🔹 TurtleBot3 Manipulation Packages
 - `turtlebot3_manipulation_bringup`
@@ -85,10 +102,8 @@ ros2 run box_sorter conveyor
 
 ---
 
-## 📜 추가 정보 (Additional Information)
-- ROS 2 Humble 기반에서 테스트됨
-- ArUco 및 YOLO를 활용한 물체 인식 기능 포함
-- MoveIt을 활용한 Arm Manipulator 제어
-
-📩 문의 사항이 있으면 개발팀에 연락하세요! 🚀
-*~쓸데없는거 넣지 마라~*
+## 📜 주요 노드 및 메시지
+- /job_topic (std_msgs/String): 작업 명령 퍼블리시
+- /conveyor/control (std_msgs/String): 컨베이어 벨트 제어
+- /conveyor/status (std_msgs/String): 컨베이어 상태 모니터링
+- /yolo/compressed (sensor_msgs/CompressedImage): YOLO 영상 피드
