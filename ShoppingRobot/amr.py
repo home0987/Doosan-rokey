@@ -1,7 +1,3 @@
-# camera_tracking_node.py
-
-# amr -> amclpose topic을 주차장에서 날리기,,
-
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -13,52 +9,63 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 from geometry_msgs.msg import Point
+from std_msgs.msg import Bool
 
 from geometry_msgs.msg import Quaternion
+
+# 3최 지연
+import time
 
 class CameraTrackingNode(Node):
     def __init__(self):
         super().__init__('camera_tracking_node')
-        
+        self.start = False
+        self.open = True
         # <1.퍼블리시 Twist /cmd_vel>
         # 퍼블리셔 생성: 이동 명령 및 위치 정보 퍼블리시
         self.publisher_ = self.create_publisher(
             Twist,
             '/cmd_vel',
             10)  
-        
+        self.model = YOLO('/home/rokey2/shopping_pat_ws/runs/detect/train/weights/best_1.pt')
         # <2. 퍼블리시 Odometry /odometry>
         # 이동 명령 퍼블리셔
         self.odom_publisher_ = self.create_publisher(
             Odometry,
             '/odometry',
             10)  # 위치 정보 퍼블리셔
-        
+        self.subscription = self.create_subscription(
+            Bool, '/bool_topic', self.listener_callback, 10)
+        self.subscription  # prevent unused variable warning
+
         # 이동 명령(Twist)과 위치 정보(Odometry)를 퍼블리시하는 역할
-        self.timer = self.create_timer(0.1, self.process_frame)  # 0.1초마다 실행
-        # 카메라 열기
-        self.cap = cv2.VideoCapture(4)  
-
-        # 카메라 열기 실패 처리
-        if not self.cap.isOpened():
-            self.get_logger().error("카메라 열기 실패!")
-            return
-        
-        self.model = YOLO('/home/kante/shopping_pat_ws/runs/detect/amr_train/weights/best.pt')
-
-        
         # 카메라 캘리브레이션 필요
 
         # focal_length <- focal_length_measurement.py 로 구함 / 픽셀 단위임.
         self.focal_length = 250 # 초점 거리 (실제 측정 필요) # <== 이거 알아내야 함.
         # / 임의로 수정한 상태, -> 이 값일때가 실제 거리에 가까움,, 
         self.known_height = 10  # AMR 실제 높이 (cm)
-        self.target_distance = 15  # 유지할 목표 거리 (cm)
+        self.target_distance = 3  # 유지할 목표 거리 (cm)
 
         # 로봇의 초기 위치 (예시)
         self.robot_x = 0.0  # X 위치 (m)
         self.robot_y = 0.0  # Y 위치 (m)
         self.robot_theta = 0.0  # 로봇의 방향 (회전각, rad)
+
+    def listener_callback(self, msg):
+        self.start = msg.data
+        self.get_logger().info(f'Received: {msg.data}')
+        if self.open:
+            self.cap = cv2.VideoCapture('/dev/video0')
+            if not self.cap.isOpened():
+                self.cap = cv2.VideoCapture('/dev/video1')
+                self.get_logger().error("카메라 열기 실패???")
+                exit()
+        if self.start:
+            self.timer = self.create_timer(0.1, self.process_frame)  # 0.1초마다 실행
+            self.open = False
+        # 카메라 열기
+       
 
     # 객체 색상 정보 함수
     def get_dominant_color(self, image, k=3):
@@ -101,44 +108,64 @@ class CameraTrackingNode(Node):
 
     '''
     def process_frame(self):
-        ret, frame = self.cap.read()
-        if not ret:
-            return
+        if self.start:
+            ret, frame = self.cap.read()
+            if not ret:
+                return
 
-        # YOLO 입력 크기에 맞게 리사이즈
-        frame = cv2.resize(frame, (640, 640))
-        self.frame_width = frame.shape[1]
+            # YOLO 입력 크기에 맞게 리사이즈
+            frame = cv2.resize(frame, (640, 640))
+            self.frame_width = frame.shape[1]
 
-        # YOLO 객체 추적 수행
-        results = self.model.track(frame, persist=True)
-        labels = results[0].boxes.cls  # 첫 번째 객체의 클래스 번호
-        confidences = results[0].boxes.conf  # 신뢰도 값
-        class_names = self.model.names  # 모델에서 학습된 클래스명들
+            # YOLO 객체 추적 수행
+            results = self.model.track(frame, persist=True) # track() : 트래킹 기능
+            labels = results[0].boxes.cls  # 첫 번째 객체의 클래스 번호
+            # accu..
+            confidences = results[0].boxes.conf  # 신뢰도 값
+            print(confidences)
+            class_names = self.model.names  # 모델에서 학습된 클래스명들
 
-        '''
-        문제 : 현재 객체 탐지가 너무 많이 되어 과부화가 올수 있는 문제가 있음,,
-        '''
-        # 1> 감지된 객체가 있는 경우
-        if results and len(results) > 0 and hasattr(results[0], 'boxes'):
-            boxes = results[0].boxes
+            '''
+            문제 : 현재 객체 탐지가 너무 많이 되어 과부화가 올수 있는 문제가 있음,,
+            # => 해결 : 모든 박스를 순회하는 for문을 제거 -> 앞서, 사장 신뢰도가 높은 박스만 가져오는 코드를 추가함.
+            ** 추가 : 객체 신뢰도,
+            '''
+            # 1> 감지된 객체가 있는 경우
+            # **
+            if results and len(results) > 0 and hasattr(results[0], 'boxes'):
+                boxes = results[0].boxes
+                '''
+                신뢰도 부분 추가했는데, 실제 상황에서 문제있는지 확인 필요.
+                '''
+                if len(boxes) == 0:
+                    return # 바운딩 박스 없음 => 종료
+                
+                # 신뢰도 가장 높은 박스 찾기
+                #  상황 : 또 다른 유사하지만 다른 빨간색 rc카 (마트 사용자) 의 존재 가능성에 대한 해결
+                max_conf_idx = boxes.conf.argmax().item() # 가장 높은 신뢰도를 가진 인덱스
+                best_box = boxes[max_conf_idx] # 가장 높은 신뢰도를 가진 바운딩 박스
+                best_conf = best_box.conf.item() # 신뢰도 값
+                best_label = best_box.cls.item() # 클래스 id
 
-            for box, label in zip(boxes, labels):
-                if int(label) == 0:
-                    x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    print(f"바운딩 박스 좌표: ({x1}, {y1}), ({x2}, {y2}) | 클래스: {label}")
+
+                # 수정 전 :for box, label, in zip(boxes, labels):
+                # 중간 수정: for box, label, confidence in zip(boxes, labels, confidences)
+                # # ** 해당 코드는 모든 박스를 순회하는 문제가 있었기에 -> 위에서 신뢰도가 가장 높은 바운딩 박스 하나를 선택하도록 변경
+                # #   /for문 제거 -> 안의 if문 밖으로 배치
+
+                # --------------------------------------
+                    # box class 
+                    # 수정 전 : if int(label) == 0:
+                if int(best_label) == 0:
+                    x1, y1, x2, y2 = map(int, best_box.xyxy[0])
+                    print(f"바운딩 박스 좌표: ({x1}, {y1}), ({x2}, {y2}) | 클래스: {best_label}")
                     bbox_height = y2 - y1  # 바운딩 박스 높이 (픽셀)
-
-                ## ROS2 Error: UnboundLocalError: local variable 'y1' referenced before assignment'
-                # 여러 바운딩 박스에 대해서, no objects에 대한 바운딩 박스? 정보도 같이 들어와서 문제가 생기는 듯
-                # -> 그래서 y1 생성전에 if int(label) == 0, 줬는데, 
-                #    dominant_color = self.get_dominant_color(frame[y1:y2, x1:x2])
-                #UnboundLocalError: local variable 'y1' referenced before assignment
 
                     # 1-1>색상 분석
                     dominant_color = self.get_dominant_color(frame[y1:y2, x1:x2])
                     # dominant_color==RED + 라벨이0_사람이면,
                     # 추가: target <-여기에 사용자 색상 선택을 줌,
-                    if self.is_target_color(dominant_color, target='red') and int(label) == 0:
+                    if self.is_target_color(dominant_color, target='red') and int(best_label) == 0:
                         #
                         # 객체 중심 좌표 계산
                         x_center, y_center = (x1 + x2) // 2, (y1 + y2) // 2
@@ -146,17 +173,7 @@ class CameraTrackingNode(Node):
                         
                         # 거리 계산 (삼각측량 공식)
                         # ==> 바운딩 박스 길이가 고려된 계산법,
-                        '''
-                        < 아이디어 . 1>
-                        예를 들어 바운딩 박스 높이가 100픽셀이고,
-                        focal_length = 75
-                        known_height = 5인 경우,
                         
-                        distance = 5 * 75 / 100 = 3.75
-
-                        해당 공식은, 객체 이동 + 카메라 이동으로
-                        바운딩 박스 높이가 게속 달라져서 바운딩 박스 높이가 변하는?문제가 있을수도
-                        '''
                         if bbox_height > 0:
                             # distance 생성 부분,,
                             distance = (self.known_height * self.focal_length) / bbox_height
@@ -176,24 +193,28 @@ class CameraTrackingNode(Node):
 
                             ## <2> /odometry
                             # ROS2위치 정보 퍼블리시
-                            odom_msg = Odometry()
-                            odom_msg.header.stamp = self.get_clock().now().to_msg()
-                            odom_msg.header.frame_id = "odom"
+                            # odom_msg = Odometry()
+                            # odom_msg.header.stamp = self.get_clock().now().to_msg()
+                            # odom_msg.header.frame_id = "odom"
 
-                            # 위치 정보 예제 (기본 값으로 설정)
-                            odom_msg.pose.pose.position.x = distance
-                            odom_msg.pose.pose.position.y = 0.0
-                            odom_msg.pose.pose.position.z = 0.0
+                            # # 위치 정보 예제 (기본 값으로 설정)
+                            # odom_msg.pose.pose.position.x = distance
+                            # odom_msg.pose.pose.position.y = 0.0
+                            # odom_msg.pose.pose.position.z = 0.0
 
-                            self.odom_publisher_.publish(odom_msg)
-                            self.get_logger().info(f"/odometry 발행: x={odom_msg.pose.pose.position.x}")
+                            # self.odom_publisher_.publish(odom_msg)
+                            # self.get_logger().info(f"/odometry 발행: x={odom_msg.pose.pose.position.x}")
 
                             # 바운딩 박스 및 거리 표시
                             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
                             label_text = f"Distance: {distance:.2f} cm"
                             # label_text_bbox = f"BBOX height: {bbox_height:.2f} px" # test,,
+                            # self.get_logger().info(confidence, label_text)
                             cv2.putText(frame, label_text, (x1, y1 - 10), 
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                            
+                            
                             # cv2.putText(frame, label_text_bbox, (x1, y1 - 10), 
                             #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                     else:
@@ -202,32 +223,37 @@ class CameraTrackingNode(Node):
 
 
 
-        # 2> 객체 인지 못함. 
-        # 현재 위치를 /twist 토픽으로 보내야 하므로,
-        else:
-            self.get_logger().info('객체 못찾음, 정지')
-            # 객체를 못 찾았을 때 기본 명령 (정지 명령)과 위치 정보 퍼블리시
-            move_cmd = Twist()
-            move_cmd.linear.x = 0.0
-            move_cmd.angular.z = 0.0
-            self.publisher_.publish(move_cmd)
-            self.get_logger().info("객체를 못 찾았음. 정지.")
+            # 2> 객체 인지 못함. 
+            # 현재 위치를 /twist 토픽으로 보내야 하므로,
             
-            # 현재 위치를 Odometry 메시지로 퍼블리시
-            odom_msg = Odometry()
-            odom_msg.header.stamp = self.get_clock().now().to_msg()
-            odom_msg.header.frame_id = "odom"
-            
-            # 로봇의 위치와 방향 설정
-            odom_msg.pose.pose.position = Point(x=self.robot_x, y=self.robot_y, z=0.0)
-            odom_msg.pose.pose.orientation = self.get_quaternion_from_euler(0.0, 0.0, self.robot_theta)
+            # 객체인지못한 시점 부터 3초가 지나면, 해당 토픽을 보내게끔 함.
+            # 1/ twist에서 linear.=0 (전진속도=0), angular=0(회전속도0) 으로 멈춤 ==> 로봇의 속도를 0으로 설정
+            # 2/ * 추가해야 할 부분? : /odometry 토픽으로, 현재 위치를 퍼블리시
+            else:
+                self.get_logger().info('/twist 객체 못찾음, 정지')
+                # 객체를 못 찾았을 때 기본 명령 (정지 명령)과 위치 정보 퍼블리시
+                move_cmd = Twist()
+                move_cmd.linear.x = 0.0
+                move_cmd.angular.z = 0.0
+                self.publisher_.publish(move_cmd)
 
-            # Odometry 메시지 퍼블리시
-            self.odom_publisher_.publish(odom_msg)
+                # 2. 현재 위치 퍼블리시
+                self.get_logger().info("/odometry 정지 후, 객체 위치 발행.")
+                # 현재 위치를 Odometry 메시지로 퍼블리시
+                odom_msg = Odometry()
+                odom_msg.header.stamp = self.get_clock().now().to_msg()
+                odom_msg.header.frame_id = "odom"
+                
+                # 로봇의 위치와 방향 설정
+                odom_msg.pose.pose.position = Point(x=self.robot_x, y=self.robot_y, z=0.0)
+                odom_msg.pose.pose.orientation = self.get_quaternion_from_euler(0.0, 0.0, self.robot_theta)
 
-        # 화면 출력
-        cv2.imshow("Tracking", frame)
-        cv2.waitKey(1)
+                # Odometry 메시지 퍼블리시
+                self.odom_publisher_.publish(odom_msg)
+
+            # 화면 출력
+            # cv2.imshow("Tracking", frame)
+            cv2.waitKey(1)
 
     # 오일러 -> 쿼터니언
     def get_quaternion_from_euler(self, roll, pitch, yaw):
@@ -254,8 +280,8 @@ class CameraTrackingNode(Node):
             move_cmd.linear.x = 0.2  # 앞으로 이동
         #elif distance < self.target_distance - 5:  # 너무 가까우면 후진 # <- 이 부분을 지운다. 
         #    move_cmd.linear.x = -0.2  # 뒤로 이동
-        else:
-            move_cmd.linear.x = 0.0  # 정지
+        # else:
+        #     move_cmd.linear.x = 0.0  # 정지
 
         # 2. 바운딩 박스의 중심 x 위치에 따라 좌우 회전
         # 바운딩 박스가 치우친 경우, angular을 조절하게 함.
@@ -270,15 +296,15 @@ class CameraTrackingNode(Node):
         '''
         center_threshold = self.frame_width * 0.2  # 중앙 오차 허용 범위 (20%) # 테스트 추후에,, 
         if x_center < self.frame_width / 2 - center_threshold:
-            move_cmd.angular.z = 0.2  # 왼쪽 회전
+            move_cmd.angular.z = -0.15  # 왼쪽 회전
         elif x_center > self.frame_width / 2 + center_threshold:
-            move_cmd.angular.z = -0.2  # 오른쪽 회전
+            move_cmd.angular.z = 0.15  # 오른쪽 회전
         else:
             move_cmd.angular.z = 0.0  # 직진
 
         return move_cmd
 
-def main(args=None):#
+def main(args=None):
     rclpy.init(args=args)
     node = CameraTrackingNode()
     rclpy.spin(node)
