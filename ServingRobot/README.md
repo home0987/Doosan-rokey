@@ -39,7 +39,7 @@ CREATE USER 'cafe_admin'@'%' IDENTIFIED BY 'cafe';
 #테이블 생성
 mysql> source $HOME/setup.sql;
 ```
-#⚠ db_connection.py에서 root 계정 사용 시 에러 발생 가능
+> ⚠ db_connection.py에서 root 계정 사용 시 에러 발생 가능
 
 ### GUI 및 구독 실행
 ```bash
@@ -56,4 +56,7 @@ python3 visualization.py
 ```
 
 ### 기타
-- matplotlib 한글 폰트 설정 : https://velog.io/@redgreen/Linux-linux%EC%97%90%EC%84%9C-Matplotlib-%ED%95%9C%EA%B8%80%ED%8F%B0%ED%8A%B8-%EC%84%A4%EC%A0%95%ED%95%98%EA%B8%B0 
+
+- matplotlib 한글 폰트 설정 🔗  
+  [velog.io 한글 폰트 설정 가이드](https://velog.io/@redgreen/Linux-linux%EC%97%90%EC%84%9C-Matplotlib-%ED%95%9C%EA%B8%80%ED%8F%B0%ED%8A%B8-%EC%84%A4%EC%A0%95%ED%95%98%EA%B8%B0)
+
