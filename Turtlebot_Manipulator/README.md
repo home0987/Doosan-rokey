@@ -6,10 +6,10 @@
 - [unity demo](https://youtu.be/3gOX1T0tEus)
   
 <table>
-  <tr>
-    <td><img src="./docs/스크린샷_2025-05-20_08-52-09.png" width="300"/></td>
-    <td><img src="./docs/스크린샷_2025-05-20_08-52-40.png" width="300"/></td>
-  </tr>
+<tr>
+<td><img src="./docs/스크린샷_2025-05-20_08-52-09.png" width="300"></td>
+<td><img src="./docs/스크린샷_2025-05-20_08-52-40.png" width="300"></td>
+</tr>
 </table>
 
 
