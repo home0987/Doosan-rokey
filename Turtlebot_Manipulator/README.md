@@ -4,10 +4,14 @@
 
 - [Turtlebot_Manipulator 데모 영상 보기](https://youtu.be/ksJAOrboxLM)
 - [unity demo](https://youtu.be/3gOX1T0tEus)
-<p>
-  <img src="./docs/스크린샷_2025-05-20_08-52-09.png" width="300" style="display: inline-block; margin-right: 10px;" />
-  <img src="./docs/스크린샷_2025-05-20_08-52-40.png" width="300" style="display: inline-block;" />
-</p>
+  
+<table>
+  <tr>
+    <td><img src="./docs/스크린샷_2025-05-20_08-52-09.png" width="300"/></td>
+    <td><img src="./docs/스크린샷_2025-05-20_08-52-40.png" width="300"/></td>
+  </tr>
+</table>
+
 
 ---
 
