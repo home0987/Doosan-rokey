@@ -8,8 +8,8 @@ YOLOv8 기반 객체 탐지와 OpenCV 색상 필터링, ROS2 내비게이션,
 ## 🎥 프로젝트 데모 영상
 
 - [쇼핑 도우미 로봇 데모 영상]
-시작 : https://youtube.com/shorts/33qaFd6gRuM
-반납 :
+- 시작 : (https://youtube.com/shorts/33qaFd6gRuM)
+- 반납 : (https://youtube.com/shorts/XIzEiMVLTXM)
 ---
 
 ## 📌 프로젝트 개요 (Solution Overview)
