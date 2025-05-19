@@ -52,6 +52,7 @@ python3 table_1.py     # 테이블 선택 및 주문 시작
 python3 order.py       # 주문 GUI
 python3 subscribe.py   # 주문 모니터링 GUI
 python3 gui_test.py    # 로봇 내비게이션 GUI
+```
 
 ### 데이터베이스 초기 설정
 ```bash
