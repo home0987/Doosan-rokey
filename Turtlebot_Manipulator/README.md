@@ -5,13 +5,10 @@
 - [Turtlebot_Manipulator 데모 영상 보기](https://youtu.be/ksJAOrboxLM)
 - [unity demo](https://youtu.be/3gOX1T0tEus)
   
-<table>
-<tr>
-<td><img src="./docs/스크린샷_2025-05-20_08-52-09.png" width="300"></td>
-<td><img src="./docs/스크린샷_2025-05-20_08-52-40.png" width="300"></td>
-</tr>
-</table>
-
+<p float="left">
+  <img src=./docs/스크린샷%202025-05-20%2008-52-09.png width="300" />
+  <img src=./docs/스크린샷%202025-05-20%2008-52-40.png width="300" />
+</p>
 
 ---
 
