@@ -2,7 +2,7 @@
 
 ## 🎥 프로젝트 데모 영상
 
-- [Turtlebot_Manipulator 데모 영상 보기](https://youtu.be/ksJAOrboxLM)
+- [Turtlebot_Manipulator](https://youtu.be/ksJAOrboxLM)
 - [unity demo](https://youtu.be/3gOX1T0tEus)
   
 <p float="left">
