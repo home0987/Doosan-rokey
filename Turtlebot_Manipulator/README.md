@@ -1,5 +1,12 @@
 # 📦 Box Sorter Package — AMR + Manipulator 기반 박스 이동 자동화
 
+## 🎥 프로젝트 데모 영상
+
+- [Turtlebot_Manipulator 데모 영상 보기](https://youtu.be/ksJAOrboxLM)
+- [unity demo](https://youtu.be/3gOX1T0tEus)
+- ![스크린샷]("./docs/스크린샷 2025-05-20 08-52-09.png")
+![스크린샷]("./docs/스크린샷 2025-05-20 08-52-40.png")
+
 ---
 
 ## 📌 프로젝트 개요
