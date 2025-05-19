@@ -10,7 +10,8 @@ SLAM으로 생성된 맵을 기반으로 최적의 청소 경로를 자동으로
 
 - [Cleaning Robot Navigation](https://youtu.be/ksJAOrboxLM)
 - [Frontier-based Autonomous Mapping](https://youtu.be/668DLuBv5s0)
-- ![Uploading image.png…]()
+- ![스크린샷](./img/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202025-05-20%2008-23-52.png)
+
 
 
 ---
