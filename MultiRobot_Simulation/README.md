@@ -166,3 +166,16 @@ msgs
      - `/simple_drone/camera_bottom`
        `/simple_drone/bottom/camera_info` → [sensor_msgs/msg/CameraInfo]
    - **Subscribe:** (없음)
+
+---
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0003.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0004.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0006.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0007.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0008.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0009.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0010.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0011.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0012.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0013.jpg)
+![협동로봇](./docs/협동로봇3_A2조_발표자료_최종_page-0014.jpg)
