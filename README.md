@@ -32,4 +32,4 @@ Python, ROS2 등 다양한 기술 스택을 기반으로 실제 작동하는 로
 
 ## 📬 Contact
 
-- GitHub: [home0987](https://github.com/home0987)
+- GitHub: [home0987](https://github.com/yjinseo)
