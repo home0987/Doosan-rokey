@@ -6,7 +6,7 @@
 ---
 ## 🎥 프로젝트 데모 영상
 
-[PICO 불량 데이터 검출 프로젝트] https://youtube.com/shorts/balqxE_6yuk?feature=share
+[PICO 불량 데이터 검출 프로젝트](https://youtube.com/shorts/balqxE_6yuk?feature=share)
 
 ---
 
@@ -22,7 +22,10 @@
   - 기존 수작업 검사 소요 시간과 정확도 문제 → 자동화  
   - 다양한 불량 유형(파손, Chipset, Oscillator 등) 검출  
   - 이미지 왜곡 보정을 위한 배경 제거 및 회전 보정  
-  - 딥러닝 기반 YOLOv8 모델 사용 및 OpenCV 전처리  
+  - 딥러닝 기반 YOLOv8 모델 사용 및 OpenCV 전처리
+    
+![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0007.jpg)
+![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0009.jpg)
 
 ---
 
@@ -39,6 +42,10 @@
   - 허프 변환을 통한 외곽선 검출 및 기울기 보정  
   - 시리얼 통신으로 촬영 신호 및 결과 전송  
   - MySQL 및 SQLite DB에 검사 결과 저장 및 관리자 페이지 시각화
+
+![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0011.jpg)
+![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0030.jpg)
+![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0026.jpg)
 
 ---
 
@@ -95,6 +102,7 @@
 - 불량품 및 정상품 데이터 실시간 DB 저장  
 - 관리자 페이지에서 불량 유형별 통계 및 개수 시각화  
 - 공정률(정상품 비율) 모니터링을 통한 지속적 품질 개선 지원
+![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0034.jpg)
 
 ---
 
@@ -107,12 +115,3 @@
 
 ## vision-ai-inference-practice
 ![20250131_18h07m33s_grim](https://github.com/user-attachments/assets/866348a7-7c9a-412f-9c1c-36017eff1593)
-
----
-
-![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0007.jpg)
-![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0009.jpg)
-![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0011.jpg)
-![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0026.jpg)
-![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0030.jpg)
-![PICO 불량 데이터 검출 프로젝트](./docs/PICO%20불량%20데이터%20검출%20프로젝트_page-0034.jpg)
