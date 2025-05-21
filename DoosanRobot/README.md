@@ -6,8 +6,8 @@
 
 ---
 ## 🎥 협동 로봇 제어 영상
-- [로봇팔의 6자유도를 활용해 손을 흔드는 동작을 부드럽게 구현] https://youtube.com/shorts/8f2eWuDkkoM?feature=share
-- [로봇팔을 이용해 블록을 정밀하게 옮기는 시연]https://youtube.com/shorts/ZoRTRqiyghw?feature=share
+- [로봇팔의 6자유도를 활용해 손을 흔드는 동작을 부드럽게 구현](https://youtube.com/shorts/8f2eWuDkkoM?feature=share)
+- [로봇팔을 이용해 블록을 정밀하게 옮기는 시연](https://youtube.com/shorts/ZoRTRqiyghw?feature=share)
 ---
 ![로봇 팔](./docs/A_1%20협동1%20발표자료_page-0003.jpg)
 
@@ -54,6 +54,8 @@
 - **음성 기능**: 치료 시작/종료 알림 및 사용자 자세 변경 안내  
 - **안전 기능**: 외력 감지, 긴급 정지, 데시벨 감지  
 ---
+![기획 내용](./docs/A_1%20협동1%20발표자료_page-0005.jpg)
+![기획 내용](./docs/A_1%20협동1%20발표자료_page-0006.jpg)
 
 ## 🛠 시스템 구성 및 동작
 
@@ -69,7 +71,4 @@
   - 안전성 평가 및 작업자 교육  
   - 잠금장치 및 비밀번호 설정  
   - 협동작업 영역 내 위험요소 제거
-    
-![기획 내용](./docs/A_1%20협동1%20발표자료_page-0005.jpg)
-![기획 내용](./docs/A_1%20협동1%20발표자료_page-0006.jpg)
 ![기획 내용](./docs/A_1%20협동1%20발표자료_page-0007.jpg)
